@@ -9,6 +9,21 @@
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
+int
+nproc(void)
+{
+  struct proc *p;
+  int count = 0;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED)
+      count++;
+    release(&p->lock);
+  }
+
+  return count;
+}
 
 struct proc *initproc;
 
@@ -123,6 +138,7 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
+p->trace_mask = 0;
   p->state = USED;
 
   // Allocate a trapframe page.
@@ -275,6 +291,7 @@ kfork(void)
   }
   np->sz = p->sz;
 
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
@@ -295,6 +312,7 @@ kfork(void)
 
   acquire(&wait_lock);
   np->parent = p;
+np->trace_mask = p->trace_mask;
   release(&wait_lock);
 
   acquire(&np->lock);
@@ -700,4 +718,20 @@ procdump(void)
     printk("%d %s %s", p->pid, state, p->name);
     printk("\n");
   }
+}
+
+int
+countprocs(void)
+{
+  struct proc *p;
+  int count = 0;
+
+  for(p = proc; p < &proc[NPROC]; p++){
+    acquire(&p->lock);
+    if(p->state != UNUSED)
+      count++;
+    release(&p->lock);
+  }
+
+  return count;
 }

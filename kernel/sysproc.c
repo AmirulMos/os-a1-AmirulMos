@@ -1,3 +1,4 @@
+#include "sysinfo.h"
 #include "types.h"
 #include "riscv.h"
 #include "defs.h"
@@ -109,4 +110,33 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_trace(void)
+{
+  int mask;
+
+  argint(0, &mask);
+  myproc()->trace_mask = (uint)mask;
+
+  return 0;
+}
+
+uint64
+sys_sysinfo(void)
+{
+  uint64 addr;
+  struct sysinfo info;
+
+  argaddr(0, &addr);
+
+  info.freemem = freemem();
+  info.nproc = countprocs();
+
+  if(copyout(myproc()->pagetable, 1, addr,
+           (char *)&info, sizeof(info)) < 0)
+	return -1;
+
+  return 0;
 }
